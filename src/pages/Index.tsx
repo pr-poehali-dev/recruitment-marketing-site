@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { toast } from '@/hooks/use-toast';
 import Icon from '@/components/ui/icon';
 
 const Index = () => {
@@ -16,6 +19,21 @@ const Index = () => {
   const [filterType, setFilterType] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
+  const [favoriteJobs, setFavoriteJobs] = useState(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [notifications, setNotifications] = useState(true);
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    experience: '',
+    skills: [],
+    appliedJobs: []
+  });
+  const [newNotifications, setNewNotifications] = useState([
+    { id: 1, message: 'Новая вакансия: Senior Developer в TechStart', time: '2 часа назад', read: false },
+    { id: 2, message: 'Ваш отклик на позицию UX Designer рассмотрен', time: '1 день назад', read: false }
+  ]);
 
   const jobs = [
     {
@@ -73,12 +91,51 @@ const Index = () => {
   ];
 
   const filteredJobs = jobs.filter(job => {
-    return (
-      job.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (filterLocation === '' || job.location === filterLocation) &&
-      (filterType === '' || job.type === filterType)
-    );
+    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLocation = filterLocation === '' || job.location === filterLocation;
+    const matchesType = filterType === '' || job.type === filterType;
+    const matchesFavorites = !showFavoritesOnly || favoriteJobs.has(job.id);
+    
+    return matchesSearch && matchesLocation && matchesType && matchesFavorites;
   });
+
+  const toggleFavorite = (jobId) => {
+    const newFavorites = new Set(favoriteJobs);
+    if (newFavorites.has(jobId)) {
+      newFavorites.delete(jobId);
+      toast({ title: 'Удалено из избранного' });
+    } else {
+      newFavorites.add(jobId);
+      toast({ title: 'Добавлено в избранное' });
+    }
+    setFavoriteJobs(newFavorites);
+  };
+
+  const markNotificationAsRead = (id) => {
+    setNewNotifications(prev => 
+      prev.map(notif => 
+        notif.id === id ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  useEffect(() => {
+    if (notifications) {
+      const interval = setInterval(() => {
+        if (Math.random() > 0.7) {
+          const newNotif = {
+            id: Date.now(),
+            message: 'Новая вакансия соответствует вашему профилю!',
+            time: 'только что',
+            read: false
+          };
+          setNewNotifications(prev => [newNotif, ...prev]);
+          toast({ title: 'Новое уведомление', description: newNotif.message });
+        }
+      }, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [notifications]);
 
   const handleNextQuestion = (answer) => {
     setAnswers([...answers, answer]);
@@ -100,8 +157,109 @@ const Index = () => {
               <h1 className="text-2xl font-bold text-slate-900">JobPortal</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline">Войти</Button>
-              <Button>Регистрация</Button>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" className="relative">
+                    <Icon name="Bell" size={16} className="mr-2" />
+                    Уведомления
+                    {newNotifications.filter(n => !n.read).length > 0 && (
+                      <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                        {newNotifications.filter(n => !n.read).length}
+                      </Badge>
+                    )}
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Уведомления</SheetTitle>
+                  </SheetHeader>
+                  <div className="space-y-4 mt-4">
+                    {newNotifications.map(notification => (
+                      <div 
+                        key={notification.id} 
+                        className={`p-3 rounded-lg border cursor-pointer ${
+                          notification.read ? 'bg-slate-50' : 'bg-blue-50 border-blue-200'
+                        }`}
+                        onClick={() => markNotificationAsRead(notification.id)}
+                      >
+                        <p className="text-sm">{notification.message}</p>
+                        <p className="text-xs text-slate-500 mt-1">{notification.time}</p>
+                      </div>
+                    ))}
+                  </div>
+                </SheetContent>
+              </Sheet>
+              
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline">
+                    <Icon name="User" size={16} className="mr-2" />
+                    Профиль
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader>
+                    <SheetTitle>Личный кабинет</SheetTitle>
+                  </SheetHeader>
+                  <div className="space-y-6 mt-6">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Основная информация</h4>
+                      <div>
+                        <label className="text-sm font-medium">Имя</label>
+                        <Input 
+                          value={profile.name} 
+                          onChange={(e) => setProfile({...profile, name: e.target.value})}
+                          placeholder="Ваше имя"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Email</label>
+                        <Input 
+                          value={profile.email} 
+                          onChange={(e) => setProfile({...profile, email: e.target.value})}
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Телефон</label>
+                        <Input 
+                          value={profile.phone} 
+                          onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                          placeholder="+7 (999) 123-45-67"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Настройки</h4>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Уведомления</label>
+                        <Switch checked={notifications} onCheckedChange={setNotifications} />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Статистика</h4>
+                      <div className="grid grid-cols-2 gap-4">
+                        <Card className="p-3">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-600">{favoriteJobs.size}</div>
+                            <div className="text-sm text-slate-600">Избранные</div>
+                          </div>
+                        </Card>
+                        <Card className="p-3">
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-600">3</div>
+                            <div className="text-sm text-slate-600">Отклики</div>
+                          </div>
+                        </Card>
+                      </div>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
+              
+              <Button>Войти</Button>
             </div>
           </div>
         </div>
@@ -112,12 +270,21 @@ const Index = () => {
         <div className="mb-8 space-y-4">
           <h2 className="text-3xl font-bold text-slate-900">Найти работу мечты</h2>
           <div className="flex flex-col md:flex-row gap-4">
-            <Input
-              placeholder="Поиск по названию вакансии..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1"
-            />
+            <div className="flex gap-2 flex-1">
+              <Input
+                placeholder="Поиск по названию вакансии..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1"
+              />
+              <Button 
+                variant={showFavoritesOnly ? "default" : "outline"}
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+              >
+                <Icon name="Heart" size={16} className="mr-1" />
+                {favoriteJobs.size}
+              </Button>
+            </div>
             <Select value={filterLocation} onValueChange={setFilterLocation}>
               <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Город" />
@@ -169,6 +336,20 @@ const Index = () => {
                     </div>
                   </div>
                   <div className="text-right">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleFavorite(job.id)}
+                        className="p-1"
+                      >
+                        <Icon 
+                          name={favoriteJobs.has(job.id) ? "Heart" : "Heart"} 
+                          size={16} 
+                          className={favoriteJobs.has(job.id) ? "text-red-500 fill-current" : "text-slate-400"}
+                        />
+                      </Button>
+                    </div>
                     <div className="text-lg font-semibold text-green-600">{job.salary}</div>
                     <Badge variant="outline">{job.type}</Badge>
                   </div>
