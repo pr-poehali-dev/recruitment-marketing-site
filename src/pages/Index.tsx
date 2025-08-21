@@ -1,282 +1,330 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 
 const Index = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [counters, setCounters] = useState({ users: 0, hires: 0, time: 0 });
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [answers, setAnswers] = useState([]);
 
-  useEffect(() => {
-    setIsVisible(true);
-    
-    // Анимация счетчиков
-    const animateCounters = () => {
-      const targets = { users: 50000, hires: 12000, time: 75 };
-      const duration = 2000;
-      const steps = 60;
-      const stepDuration = duration / steps;
-      
-      let currentStep = 0;
-      const timer = setInterval(() => {
-        currentStep++;
-        const progress = currentStep / steps;
-        
-        setCounters({
-          users: Math.floor(targets.users * progress),
-          hires: Math.floor(targets.hires * progress),
-          time: Math.floor(targets.time * progress)
-        });
-        
-        if (currentStep >= steps) {
-          clearInterval(timer);
-          setCounters(targets);
-        }
-      }, stepDuration);
-    };
-    
-    const timeout = setTimeout(animateCounters, 500);
-    return () => clearTimeout(timeout);
-  }, []);
-
-  const solutions = [
+  const jobs = [
     {
-      icon: 'Users',
-      title: 'Привлечение талантов',
-      description: 'Создавайте привлекательные карьерные страницы и автоматизируйте процесс поиска кандидатов'
+      id: 1,
+      title: 'Frontend разработчик',
+      company: 'TechCorp',
+      location: 'Москва',
+      type: 'Полная занятость',
+      salary: '150,000 - 250,000 ₽',
+      description: 'Ищем опытного Frontend разработчика для работы с React и TypeScript. Требуется опыт от 3 лет.',
+      requirements: ['React', 'TypeScript', 'HTML/CSS', 'Git'],
+      remote: true
     },
     {
-      icon: 'Target',
-      title: 'Точное таргетирование',
-      description: 'Находите идеальных кандидатов с помощью ИИ-алгоритмов и расширенной аналитики'
+      id: 2,
+      title: 'UX/UI дизайнер',
+      company: 'DesignStudio',
+      location: 'Санкт-Петербург',
+      type: 'Частичная занятость',
+      salary: '80,000 - 120,000 ₽',
+      description: 'Создавай потрясающие пользовательские интерфейсы для мобильных и веб приложений.',
+      requirements: ['Figma', 'Adobe Creative Suite', 'Прототипирование'],
+      remote: false
     },
     {
-      icon: 'Zap',
-      title: 'Автоматизация',
-      description: 'Оптимизируйте рабочие процессы с помощью автоматических уведомлений и интеграций'
+      id: 3,
+      title: 'Backend разработчик',
+      company: 'DataSystems',
+      location: 'Екатеринбург',
+      type: 'Полная занятость',
+      salary: '180,000 - 300,000 ₽',
+      description: 'Разрабатывай масштабируемые серверные решения на Node.js и Python.',
+      requirements: ['Node.js', 'Python', 'PostgreSQL', 'Docker'],
+      remote: true
+    },
+    {
+      id: 4,
+      title: 'Product Manager',
+      company: 'StartupInc',
+      location: 'Новосибирск',
+      type: 'Полная занятость',
+      salary: '200,000 - 350,000 ₽',
+      description: 'Управляй жизненным циклом продукта от идеи до запуска.',
+      requirements: ['Agile', 'Аналитика', 'Управление командой'],
+      remote: true
     }
   ];
 
-  const integrations = [
-    { name: 'Workday', logo: '💼' },
-    { name: 'BambooHR', logo: '🎋' },
-    { name: 'Greenhouse', logo: '🏠' },
-    { name: 'Lever', logo: '⚖️' },
-    { name: 'SmartRecruiters', logo: '🧠' },
-    { name: 'JazzHR', logo: '🎵' }
+  const aiQuestions = [
+    "Расскажите о себе и своем опыте работы",
+    "Почему вы заинтересованы в этой позиции?",
+    "Какие ваши главные профессиональные достижения?",
+    "Как вы решаете сложные рабочие задачи?",
+    "Где вы видите себя через 5 лет?"
   ];
 
+  const filteredJobs = jobs.filter(job => {
+    return (
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      (filterLocation === '' || job.location === filterLocation) &&
+      (filterType === '' || job.type === filterType)
+    );
+  });
+
+  const handleNextQuestion = (answer) => {
+    setAnswers([...answers, answer]);
+    if (currentQuestion < aiQuestions.length - 1) {
+      setCurrentQuestion(currentQuestion + 1);
+    } else {
+      alert('Спасибо! Ваши ответы отправлены HR-менеджеру.');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Навигация */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b transition-all duration-700 ${isVisible ? 'translate-y-0' : '-translate-y-full'}`}>
+    <div className="min-h-screen bg-slate-50">
+      {/* Заголовок */}
+      <header className="bg-white shadow-sm border-b">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Icon name="Users" size={32} className="text-primary" />
-              <span className="text-2xl font-bold text-primary">RecruitPro</span>
+            <div className="flex items-center space-x-3">
+              <Icon name="Briefcase" size={32} className="text-blue-600" />
+              <h1 className="text-2xl font-bold text-slate-900">JobPortal</h1>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#solutions" className="text-slate-600 hover:text-primary transition-colors">Решения</a>
-              <a href="#products" className="text-slate-600 hover:text-primary transition-colors">Продукты</a>
-              <a href="#integrations" className="text-slate-600 hover:text-primary transition-colors">Интеграции</a>
-              <a href="#resources" className="text-slate-600 hover:text-primary transition-colors">Ресурсы</a>
-              <Button variant="outline" className="mr-2">Войти</Button>
-              <Button>Начать бесплатно</Button>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline">Войти</Button>
+              <Button>Регистрация</Button>
             </div>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Hero секция */}
-      <section className="pt-24 pb-16 px-6">
-        <div className="container mx-auto text-center">
-          <div className={`transition-all duration-1000 ${isVisible ? 'animate-fade-in' : 'opacity-0'}`}>
-            <Badge variant="secondary" className="mb-4 px-4 py-2 text-sm">
-              <Icon name="Sparkles" size={16} className="mr-2" />
-              Новое в рекрутинге
-            </Badge>
-            <h1 className="text-5xl md:text-7xl font-bold text-slate-900 mb-6 leading-tight">
-              Революция в <br />
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                рекрутинговом
-              </span> <br />
-              маркетинге
-            </h1>
-            <p className="text-xl text-slate-600 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Привлекайте лучших кандидатов, автоматизируйте процессы найма и создавайте 
-              выдающийся опыт взаимодействия с помощью нашей инновационной платформы.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button size="lg" className="text-lg px-8 py-4 hover:scale-105 transition-transform">
-                <Icon name="Play" size={20} className="mr-2" />
-                Смотреть демо
-              </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8 py-4 hover:scale-105 transition-transform">
-                Начать бесплатно
-                <Icon name="ArrowRight" size={20} className="ml-2" />
-              </Button>
-            </div>
-          </div>
-          
-          {/* Hero изображение */}
-          <div className={`transition-all duration-1000 delay-300 ${isVisible ? 'animate-slide-up' : 'opacity-0 translate-y-10'}`}>
-            <img 
-              src="/img/f0ee1272-2d50-48fa-8be9-68de2393724c.jpg" 
-              alt="Recruitment Dashboard" 
-              className="mx-auto rounded-2xl shadow-2xl max-w-4xl w-full hover:scale-105 transition-transform duration-500"
+      <div className="container mx-auto px-6 py-8">
+        {/* Поиск и фильтры */}
+        <div className="mb-8 space-y-4">
+          <h2 className="text-3xl font-bold text-slate-900">Найти работу мечты</h2>
+          <div className="flex flex-col md:flex-row gap-4">
+            <Input
+              placeholder="Поиск по названию вакансии..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1"
             />
+            <Select value={filterLocation} onValueChange={setFilterLocation}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Город" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Все города</SelectItem>
+                <SelectItem value="Москва">Москва</SelectItem>
+                <SelectItem value="Санкт-Петербург">Санкт-Петербург</SelectItem>
+                <SelectItem value="Екатеринбург">Екатеринбург</SelectItem>
+                <SelectItem value="Новосибирск">Новосибирск</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Тип работы" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Все типы</SelectItem>
+                <SelectItem value="Полная занятость">Полная занятость</SelectItem>
+                <SelectItem value="Частичная занятость">Частичная занятость</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
-      </section>
 
-      {/* Статистика */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
-                {counters.users.toLocaleString()}+
-              </div>
-              <p className="text-slate-600">Активных пользователей</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
-                {counters.hires.toLocaleString()}+
-              </div>
-              <p className="text-slate-600">Успешных найма</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl font-bold text-primary mb-2">
-                {counters.time}%
-              </div>
-              <p className="text-slate-600">Экономия времени</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Решения */}
-      <section id="solutions" className="py-20 bg-slate-50">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
-              Комплексные решения
-            </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              От привлечения кандидатов до финального найма — всё в одной платформе
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {solutions.map((solution, index) => (
-              <Card key={index} className={`hover:shadow-xl transition-all duration-300 hover:scale-105 border-0 shadow-lg animate-scale-in`} style={{animationDelay: `${index * 200}ms`}}>
-                <CardHeader className="text-center pb-4">
-                  <div className="mx-auto mb-4 p-4 bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center">
-                    <Icon name={solution.icon} size={32} className="text-primary" />
+        {/* Список вакансий */}
+        <div className="grid gap-6">
+          {filteredJobs.map((job) => (
+            <Card key={job.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-xl mb-2">{job.title}</CardTitle>
+                    <div className="flex items-center space-x-4 text-slate-600">
+                      <span className="flex items-center">
+                        <Icon name="Building2" size={16} className="mr-1" />
+                        {job.company}
+                      </span>
+                      <span className="flex items-center">
+                        <Icon name="MapPin" size={16} className="mr-1" />
+                        {job.location}
+                      </span>
+                      {job.remote && (
+                        <Badge variant="secondary">
+                          <Icon name="Wifi" size={14} className="mr-1" />
+                          Удаленно
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                  <CardTitle className="text-xl">{solution.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-slate-600 text-center leading-relaxed">
-                    {solution.description}
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <div className="text-right">
+                    <div className="text-lg font-semibold text-green-600">{job.salary}</div>
+                    <Badge variant="outline">{job.type}</Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-700 mb-4">{job.description}</p>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {job.requirements.map((req, index) => (
+                    <Badge key={index} variant="secondary">{req}</Badge>
+                  ))}
+                </div>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => setSelectedJob(job)}>
+                      Откликнуться на вакансию
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Отклик на вакансию: {job.title}</DialogTitle>
+                    </DialogHeader>
+                    
+                    <Tabs defaultValue="resume" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="resume">Резюме</TabsTrigger>
+                        <TabsTrigger value="interview">ИИ-Интервью</TabsTrigger>
+                        <TabsTrigger value="test">Тестирование</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="resume" className="space-y-4">
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium">Имя и фамилия</label>
+                            <Input placeholder="Введите ваше имя" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Email</label>
+                            <Input type="email" placeholder="your@email.com" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Телефон</label>
+                            <Input placeholder="+7 (999) 123-45-67" />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Опыт работы</label>
+                            <Textarea placeholder="Опишите ваш опыт работы..." rows={4} />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Загрузить резюме</label>
+                            <Input type="file" accept=".pdf,.doc,.docx" />
+                          </div>
+                          <Button className="w-full">
+                            <Icon name="Send" size={16} className="mr-2" />
+                            Отправить резюме
+                          </Button>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="interview" className="space-y-4">
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <h4 className="font-medium mb-2 flex items-center">
+                            <Icon name="Bot" size={20} className="mr-2 text-blue-600" />
+                            ИИ-Ассистент HR
+                          </h4>
+                          <p className="text-sm text-slate-600">
+                            Пройдите краткое собеседование с нашим ИИ-ассистентом. 
+                            Это поможет HR-менеджеру лучше понять ваши навыки и мотивацию.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <label className="text-sm font-medium">
+                              Вопрос {currentQuestion + 1} из {aiQuestions.length}
+                            </label>
+                            <div className="mt-2 p-3 bg-slate-100 rounded">
+                              {aiQuestions[currentQuestion]}
+                            </div>
+                          </div>
+                          <Textarea 
+                            placeholder="Введите ваш ответ..."
+                            rows={4}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && e.target.value.trim()) {
+                                handleNextQuestion(e.target.value);
+                                e.target.value = '';
+                              }
+                            }}
+                          />
+                          <Button 
+                            onClick={() => {
+                              const textarea = document.querySelector('textarea[placeholder="Введите ваш ответ..."]');
+                              if (textarea.value.trim()) {
+                                handleNextQuestion(textarea.value);
+                                textarea.value = '';
+                              }
+                            }}
+                          >
+                            {currentQuestion < aiQuestions.length - 1 ? 'Следующий вопрос' : 'Завершить интервью'}
+                          </Button>
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="test" className="space-y-4">
+                        <div className="bg-green-50 p-4 rounded-lg">
+                          <h4 className="font-medium mb-2 flex items-center">
+                            <Icon name="Brain" size={20} className="mr-2 text-green-600" />
+                            Тестирование навыков
+                          </h4>
+                          <p className="text-sm text-slate-600">
+                            Пройдите короткий тест для оценки ваших профессиональных навыков.
+                          </p>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <h5 className="font-medium mb-2">1. Что такое React?</h5>
+                            <div className="space-y-2">
+                              {['JavaScript библиотека для UI', 'Backend framework', 'База данных', 'CSS препроцессор'].map((option, index) => (
+                                <label key={index} className="flex items-center space-x-2">
+                                  <input type="radio" name="q1" value={option} />
+                                  <span>{option}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <h5 className="font-medium mb-2">2. Какой принцип SOLID нарушается?</h5>
+                            <Textarea placeholder="Опишите пример..." rows={3} />
+                          </div>
+                          
+                          <Button className="w-full">
+                            <Icon name="CheckCircle" size={16} className="mr-2" />
+                            Завершить тест
+                          </Button>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </DialogContent>
+                </Dialog>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </section>
-
-      {/* Интеграции */}
-      <section id="integrations" className="py-20">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
-              Интеграция с ATS системами
-            </h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Бесшовная интеграция с популярными системами управления кандидатами
-            </p>
+        
+        {filteredJobs.length === 0 && (
+          <div className="text-center py-12">
+            <Icon name="Search" size={48} className="mx-auto text-slate-400 mb-4" />
+            <h3 className="text-xl font-medium text-slate-600 mb-2">Вакансии не найдены</h3>
+            <p className="text-slate-500">Попробуйте изменить параметры поиска</p>
           </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {integrations.map((integration, index) => (
-              <Card key={index} className="hover:shadow-lg transition-all duration-300 hover:scale-105 p-6 text-center border-0 shadow-md">
-                <div className="text-4xl mb-3">{integration.logo}</div>
-                <p className="text-sm font-medium text-slate-700">{integration.name}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA секция */}
-      <section className="py-20 bg-gradient-to-r from-primary to-blue-600">
-        <div className="container mx-auto px-6 text-center">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-              Готовы революционизировать свой рекрутинг?
-            </h2>
-            <p className="text-xl text-white/90 mb-8">
-              Присоединитесь к тысячам компаний, которые уже трансформировали свой процесс найма
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" variant="secondary" className="text-lg px-8 py-4 hover:scale-105 transition-transform">
-                Начать бесплатно
-              </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-4 text-white border-white hover:bg-white hover:text-primary transition-all">
-                Связаться с нами
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 text-white py-16">
-        <div className="container mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Icon name="Users" size={28} className="text-primary" />
-                <span className="text-xl font-bold">RecruitPro</span>
-              </div>
-              <p className="text-slate-400">
-                Инновационная платформа для современного рекрутинга
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Продукты</h4>
-              <ul className="space-y-2 text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Recruitment Marketing</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">ATS Integration</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Analytics</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Ресурсы</h4>
-              <ul className="space-y-2 text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">Документация</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Поддержка</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Блог</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Контакты</h4>
-              <ul className="space-y-2 text-slate-400">
-                <li>info@recruitpro.com</li>
-                <li>+7 (495) 123-45-67</li>
-                <li>Москва, Россия</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-slate-800 mt-8 pt-8 text-center text-slate-400">
-            <p>&copy; 2024 RecruitPro. Все права защищены.</p>
-          </div>
-        </div>
-      </footer>
+        )}
+      </div>
     </div>
   );
 };
